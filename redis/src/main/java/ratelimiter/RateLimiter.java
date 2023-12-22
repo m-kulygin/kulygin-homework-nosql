@@ -21,9 +21,20 @@ public class RateLimiter {
     this.timeWindowSeconds = timeWindowSeconds;
   }
 
-  public boolean pass() {
-    // TODO: Implementation
-    return false;
+  public boolean pass() { // реализована разновидность алгоритма "протекающее ведро"
+    long now = System.currentTimeMillis();
+
+    if (maxRequestCount == 0)
+      return false;
+
+    if (redis.llen(label) == maxRequestCount)
+      if (now - Long.parseLong(redis.lindex(label, 0)) < timeWindowSeconds*1000)
+        return false;
+      else
+        redis.lpop(label);
+
+    redis.rpush(label, String.valueOf(now));
+    return true;
   }
 
   public static void main(String[] args) {
